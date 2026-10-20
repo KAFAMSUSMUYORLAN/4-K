@@ -14,6 +14,7 @@ start_time = 0.0
 target_hwnd = None
 saved_pos = (0, 0)
 hotkey = None
+waiting_for_key = False
 
 def get_window_rect(hwnd):
     r = wt.RECT()
@@ -80,21 +81,9 @@ def open_selector():
 tk.Button(root, text="Uygulama Seç", command=open_selector).pack(pady=2)
 
 def set_hotkey():
-    global hotkey
+    global waiting_for_key
+    waiting_for_key = True
     hotkey_label.config(text="Bir tuşa basın...", fg="orange")
-    
-    def on_key_chosen(k):
-        global hotkey
-        hotkey = k
-        try:
-            key_name = k.char.upper()
-        except AttributeError:
-            key_name = str(k).replace("Key.", "")
-            
-        hotkey_label.config(text=f"Kısayol: {key_name}", fg="purple")
-        root.unbind("<Key>")
-        
-    root.bind("<Key>", on_key_chosen)
 
 tk.Button(root, text="Kısayol Tuşu Belirle", command=set_hotkey).pack(pady=4)
 
@@ -150,7 +139,17 @@ def update_timer():
     root.after(50, update_timer)
 
 def on_press(key):
-    global m_held
+    global m_held, hotkey, waiting_for_key
+    if waiting_for_key:
+        hotkey = key
+        try:
+            key_name = key.char.upper()
+        except AttributeError:
+            key_name = str(key).replace("Key.", "")
+        hotkey_label.config(text=f"Kısayol: {key_name}", fg="purple")
+        waiting_for_key = False
+        return
+
     if key == hotkey and not m_held:
         m_held = True
         root.after(0, start_timer)
