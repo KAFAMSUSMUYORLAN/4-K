@@ -1,4 +1,4 @@
-```python
+python
 import tkinter as tk
 import time
 import ctypes
@@ -154,4 +154,3 @@ listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 root.protocol("WM_DELETE_WINDOW", close_app)
 root.mainloop()
-```
