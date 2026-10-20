@@ -1,4 +1,3 @@
-python
 import tkinter as tk
 import time
 import ctypes
