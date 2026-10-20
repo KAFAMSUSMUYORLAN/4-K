@@ -13,6 +13,7 @@ running = m_held = False
 start_time = 0.0
 target_hwnd = None
 saved_pos = (0, 0)
+hotkey = None
 
 def get_window_rect(hwnd):
     r = wt.RECT()
@@ -39,13 +40,17 @@ def list_windows():
 
 root = tk.Tk()
 root.title("X-4K")
-root.geometry("320x230")
+root.geometry("320x280")
 root.attributes("-topmost", True)
 root.resizable(False, False)
 
 tk.Label(root, text="X-4K", font=("Arial", 20, "bold")).pack(pady=(8, 2))
 target_label = tk.Label(root, text="Hedef: (seçilmedi)", font=("Arial", 9), fg="blue")
 target_label.pack(pady=2)
+
+hotkey_label = tk.Label(root, text="Kısayol: (seçilmedi)", font=("Arial", 10), fg="purple")
+hotkey_label.pack(pady=2)
+
 timer_label = tk.Label(root, text="0.0 / 15.0 s", font=("Arial", 14))
 timer_label.pack(pady=2)
 status_label = tk.Label(root, text="READY", font=("Arial", 10))
@@ -72,28 +77,40 @@ def open_selector():
     tk.Button(sel, text="Seç", command=choose).pack(pady=6)
     lb.bind("<Double-Button-1>", lambda e: choose())
 
-tk.Button(root, text="Uygulama Seç", command=open_selector).pack(pady=4)
+tk.Button(root, text="Uygulama Seç", command=open_selector).pack(pady=2)
 
-def_h press_and_pull_back():
+def set_hotkey():
+    global hotkey
+    hotkey_label.config(text="Bir tuşa basın...", fg="orange")
+    
+    def on_key_chosen(k):
+        global hotkey
+        hotkey = k
+        try:
+            key_name = k.char.upper()
+        except AttributeError:
+            key_name = str(k).replace("Key.", "")
+            
+        hotkey_label.config(text=f"Kısayol: {key_name}", fg="purple")
+        root.unbind("<Key>")
+        
+    root.bind("<Key>", on_key_chosen)
+
+tk.Button(root, text="Kısayol Tuşu Belirle", command=set_hotkey).pack(pady=4)
+
+def press_and_pull_back():
     global saved_pos
-    if targetwnd is None:
+    if target_hwnd is None:
         return
     saved_pos = mouse.position
     left, top, right, bottom = get_window_rect(target_hwnd)
     
-    # 1. X butonuna git
     mouse.position = (right - 30, top + 15)
-    
-    # 2. Sol tıkı bas (BIRAKMA)
     mouse.press(Button.left)
-    
-    # 3. Hemen uzağa çekil (tık hala basılı)
     mouse.position = (right - 100, top + 15)
 
 def release_click():
-    # Sol tıkı bırak
     mouse.release(Button.left)
-    # Fareyi eski yerine koy
     mouse.position = saved_pos
 
 def start_timer():
@@ -103,9 +120,11 @@ def start_timer():
     if target_hwnd is None:
         status_label.config(text="ÖNCE UYGULAMA SEÇ", fg="red")
         return
-    
+    if hotkey is None:
+        status_label.config(text="ÖNCE KISAYOL SEÇ", fg="red")
+        return
+        
     press_and_pull_back()
-    
     running = True
     start_time = time.monotonic()
     status_label.config(text="ACTIVE", fg="green")
@@ -132,21 +151,15 @@ def update_timer():
 
 def on_press(key):
     global m_held
-    try:
-        if key.char and key.char.lower() == "m" and not m_held:
-            m_held = True
-            root.after(0, start_timer)
-    except AttributeError:
-        pass
+    if key == hotkey and not m_held:
+        m_held = True
+        root.after(0, start_timer)
 
 def on_release(key):
     global m_held
-    try:
-        if key.char and key.char.lower() == "m":
-            m_held = False
-            root.after(0, stop_timer)
-    except AttributeError:
-        pass
+    if key == hotkey:
+        m_held = False
+        root.after(0, stop_timer)
 
 def close_app():
     release_click()
