@@ -9,7 +9,7 @@ MAX_TIME = 15.0
 user32 = ctypes.windll.user32
 mouse = MouseController()
 
-running = m_held = x_held = False
+running = m_held = False
 start_time = 0.0
 target_hwnd = None
 saved_pos = (0, 0)
@@ -74,25 +74,27 @@ def open_selector():
 
 tk.Button(root, text="Uygulama Seç", command=open_selector).pack(pady=4)
 
-def press_target_x():
-    global x_held, saved_pos
-    if target_hwnd is None or x_held:
+def_h press_and_pull_back():
+    global saved_pos
+    if targetwnd is None:
         return
-    _, t, r, _ = get_window_rect(target_hwnd)
     saved_pos = mouse.position
-    mouse.position = (r - 30, t + 15)
+    left, top, right, bottom = get_window_rect(target_hwnd)
+    
+    # 1. X butonuna git
+    mouse.position = (right - 30, top + 15)
+    
+    # 2. Sol tıkı bas (BIRAKMA)
     mouse.press(Button.left)
-    x_held = True
+    
+    # 3. Hemen uzağa çekil (tık hala basılı)
+    mouse.position = (right - 100, top + 15)
 
-def release_target_x_safely():
-    global x_held
-    if not x_held:
-        return
-    cx, cy = mouse.position
-    mouse.position = (cx - 50, cy)
+def release_click():
+    # Sol tıkı bırak
     mouse.release(Button.left)
+    # Fareyi eski yerine koy
     mouse.position = saved_pos
-    x_held = False
 
 def start_timer():
     global running, start_time
@@ -101,10 +103,12 @@ def start_timer():
     if target_hwnd is None:
         status_label.config(text="ÖNCE UYGULAMA SEÇ", fg="red")
         return
+    
+    press_and_pull_back()
+    
     running = True
     start_time = time.monotonic()
     status_label.config(text="ACTIVE", fg="green")
-    press_target_x()
     update_timer()
 
 def stop_timer():
@@ -113,7 +117,7 @@ def stop_timer():
         return
     running = False
     status_label.config(text="READY", fg="black")
-    release_target_x_safely()
+    release_click()
 
 def update_timer():
     if not running:
@@ -145,7 +149,7 @@ def on_release(key):
         pass
 
 def close_app():
-    release_target_x_safely()
+    release_click()
     listener.stop()
     root.destroy()
 
